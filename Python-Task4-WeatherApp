@@ -1,0 +1,180 @@
+import tkinter as tk
+from tkinter import messagebox
+import requests
+from PIL import Image, ImageTk
+from io import BytesIO
+
+# -----------------------------
+# Replace with your API key
+# -----------------------------
+API_KEY = "8f62e82370f561c8038994adda312962"
+
+# -----------------------------
+# Function to Get Weather
+# -----------------------------
+def get_weather():
+
+    city = city_entry.get()
+
+    if city == "":
+        messagebox.showerror("Error", "Enter a city name")
+        return
+
+    current_url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
+
+    forecast_url = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={API_KEY}&units=metric"
+
+    try:
+        current = requests.get(current_url).json()
+
+        if current["cod"] != 200:
+            messagebox.showerror("Error", current["message"])
+            return
+
+        forecast = requests.get(forecast_url).json()
+
+        city_name = current["name"]
+        country = current["sys"]["country"]
+
+        temp = current["main"]["temp"]
+        humidity = current["main"]["humidity"]
+        pressure = current["main"]["pressure"]
+        wind = current["wind"]["speed"]
+
+        description = current["weather"][0]["description"].title()
+
+        icon = current["weather"][0]["icon"]
+
+        result.config(
+            text=f"""
+City : {city_name}, {country}
+
+Temperature : {temp} °C
+
+Condition : {description}
+
+Humidity : {humidity} %
+
+Pressure : {pressure} hPa
+
+Wind Speed : {wind} m/s
+"""
+        )
+
+        # Weather Icon
+        icon_url = f"http://openweathermap.org/img/wn/{icon}@2x.png"
+
+        image = requests.get(icon_url)
+
+        img = Image.open(BytesIO(image.content))
+
+        img = ImageTk.PhotoImage(img)
+
+        icon_label.config(image=img)
+        icon_label.image = img
+
+        # Hourly Forecast
+        hourly_text.delete("1.0", tk.END)
+
+        hourly_text.insert(tk.END, "Hourly Forecast\n\n")
+
+        for item in forecast["list"][:8]:
+
+            time = item["dt_txt"]
+
+            temperature = item["main"]["temp"]
+
+            weather = item["weather"][0]["description"]
+
+            hourly_text.insert(
+                tk.END,
+                f"{time}\n{temperature}°C - {weather}\n\n"
+            )
+
+        # Daily Forecast
+        daily_text.delete("1.0", tk.END)
+
+        daily_text.insert(tk.END, "5-Day Forecast\n\n")
+
+        for item in forecast["list"][::8]:
+
+            date = item["dt_txt"].split()[0]
+
+            temperature = item["main"]["temp"]
+
+            weather = item["weather"][0]["description"]
+
+            daily_text.insert(
+                tk.END,
+                f"{date}\n{temperature}°C - {weather}\n\n"
+            )
+
+    except Exception:
+        messagebox.showerror("Error", "Unable to fetch weather.")
+
+# -----------------------------
+# GUI
+# -----------------------------
+
+root = tk.Tk()
+
+root.title("Weather App")
+
+root.geometry("650x700")
+
+root.resizable(False, False)
+
+title = tk.Label(
+    root,
+    text="Weather Forecast App",
+    font=("Arial", 20, "bold")
+)
+
+title.pack(pady=10)
+
+city_entry = tk.Entry(
+    root,
+    font=("Arial", 14),
+    width=25
+)
+
+city_entry.pack(pady=5)
+
+search_btn = tk.Button(
+    root,
+    text="Search Weather",
+    font=("Arial", 12),
+    command=get_weather
+)
+
+search_btn.pack(pady=10)
+
+icon_label = tk.Label(root)
+
+icon_label.pack()
+
+result = tk.Label(
+    root,
+    font=("Arial", 12),
+    justify="left"
+)
+
+result.pack()
+
+hourly_text = tk.Text(
+    root,
+    height=12,
+    width=70
+)
+
+hourly_text.pack(pady=10)
+
+daily_text = tk.Text(
+    root,
+    height=10,
+    width=70
+)
+
+daily_text.pack()
+
+root.mainloop()
