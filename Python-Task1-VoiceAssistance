@@ -1,0 +1,82 @@
+import speech_recognition as sr
+import pyttsx3
+import datetime
+import webbrowser
+import pyautogui
+import time
+# Initialize text-to-speech engine
+engine = pyttsx3.init()
+
+def speak(text):
+    print("Assistant:", text)
+    engine.say(text)
+    engine.runAndWait()
+
+def listen():
+    recognizer = sr.Recognizer()
+
+    with sr.Microphone() as source:
+        print("Listening...")
+        recognizer.adjust_for_ambient_noise(source)
+
+        try:
+            audio = recognizer.listen(source)
+            command = recognizer.recognize_google(audio)
+            print("You:", command)
+            return command.lower()
+
+        except:
+            speak("Sorry, I could not understand.")
+            return ""
+
+def process_command(command):
+
+    if "hello" in command:
+        speak("Hello! Nice to meet you.")
+
+    elif "how are you" in command:
+        speak("I am doing great. How are you?")
+    
+    elif command.startswith("open"):
+        app_name = command.replace("open", "").strip()
+        speak(f"Opening {app_name}")
+        pyautogui.press("win")
+        time.sleep(1)
+        pyautogui.write(app_name)
+        time.sleep(1)
+        pyautogui.press("enter")
+
+    elif "time" in command:
+        current_time = datetime.datetime.now().strftime("%I:%M %p")
+        speak("Current time is " + current_time)
+
+    elif "date" in command:
+        today = datetime.date.today()
+        speak("Today's date is " + str(today))
+
+    elif "search" in command:
+        query = command.replace("search", "")
+        speak("Searching for " + query)
+        webbrowser.open(
+            "https://www.google.com/search?q=" + query
+        )
+
+    elif "exit" in command or "stop" in command:
+        speak("Goodbye!")
+        return False
+
+    else:
+        speak("Command not recognized.")
+
+    return True
+
+# Main Program
+speak("Voice Assistant Started")
+
+running = True
+
+while running:
+    command = listen()
+
+    if command:
+        running = process_command(command)
